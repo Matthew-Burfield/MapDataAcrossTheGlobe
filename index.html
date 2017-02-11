@@ -1,0 +1,70 @@
+<html>
+  <head>
+    <title>Map Data Across The Globe</title>
+  </head>
+  <body>
+    <div id='container'></div>
+    <script src='https://d3js.org/d3.v4.min.js'></script>
+    <script>
+      const getData = () => {
+        const xhttp = new XMLHttpRequest();
+        const url = 'https://raw.githubusercontent.com/FreeCodeCamp/ProjectReferenceData/master/meteorite-strike-data.json';
+
+        xhttp.onload = () => {
+          if (xhttp.status === 200) {
+            drawGraph(JSON.parse(xhttp.responseText));
+          } else {
+            alert(`error getting data: ${xhttp.status}`);
+          }
+        }
+
+        xhttp.open('get', url);
+        xhttp.send();
+      };
+
+      const drawGraph = (data) => {
+        const width = 500;
+        const height = 500;
+
+        const svg = d3.select('#container')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+        const graph = data.features.map(item => {
+          return {
+            lat: Number(item.properties.reclat),
+            long: Number(item.properties.reclong),
+            name: item.properties.name,
+            mass: Number(item.properties.mass)
+          };
+        });
+
+        const latScale = d3.scaleLinear()
+        .domain([d3.min(graph, d => d.lat), d3.max(graph, d => d.lat)])
+        .range([0, width]);
+
+        const longScale = d3.scaleLinear()
+        .domain([d3.min(graph, d => d.long), d3.max(graph, d => d.long)])
+        .range([0, height]);
+
+        const radiusScale = d3.scaleLog()
+        .domain([d3.min(graph, d => d.mass), d3.max(graph, d => d.mass)])
+        .range([0, 10]);
+
+        const points = svg.append('g')
+        .selectAll('circle')
+        .data(graph)
+        .enter()
+        .append('circle')
+        .attr('r', d => {
+          return radiusScale(d.mass)
+        })
+        .attr('cx', d => latScale(d.lat))
+        .attr('cy', d => longScale(d.long));
+      }
+
+      getData();
+    </script>
+  </body>
+</html>
