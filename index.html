@@ -1,6 +1,22 @@
 <html>
   <head>
     <title>Map Data Across The Globe</title>
+    <style>
+      div.tooltip {
+        position: absolute;
+        text-align: center;
+        padding: 5px;
+        font: 12px sans-serif;
+        background: lightsteelblue;
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+      }
+      div.tooltip p {
+        margin: 0;
+        padding: 0;
+      }
+    </style>
   </head>
   <body>
     <div id='container'></div>
@@ -25,13 +41,22 @@
       const width = 1000;
       const height = 500;
 
+      const tooltip = d3.select('body')
+      .append('div')
+      .attr('class', 'tooltip')
+      .style('opacity', 0);
+
       const svg = d3.select('#container')
       .append('svg')
       .attr('width', width)
       .attr('height', height);
 
+      svg.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', '#0077be');
+
       const projection = d3.geoMercator()
-      //.scale(100)
       .translate([width / 2, height / 2]);
 
       const countries = svg.append('g');
@@ -50,6 +75,20 @@
         console.log(`min: ${d3.min(graph, d => d.mass)}, and max: ${d3.max(graph, d => d.mass)}`)
         // console.log(`Low val: ${radiusScale(10)} and high val: ${radiusScale(1000000)}`)
 
+        const massValues = data.features.map(data => {
+          return data.properties.mass;
+        });
+
+        const massCount = massValues.reduce((obj, data) => {
+          if (!obj[data]) {
+            obj[data] = 0;
+          }
+          obj[data] = obj[data] + 1;
+          return obj;
+        }, {})
+
+        console.table(massCount);
+
         const points = meteorites
         .selectAll('circle')
         .data(graph)
@@ -67,7 +106,20 @@
           return 50;
         })
         .attr('cx', d => projection([d.long, d.lat])[0])
-        .attr('cy', d => projection([d.long, d.lat])[1]);
+        .attr('cy', d => projection([d.long, d.lat])[1])
+        .on('mouseover', item => {
+          tooltip.transition()
+          .duration(200)
+          .style('opacity', .9);
+          tooltip.html(`<p>Name: ${item.name}</p><p>Mass: ${item.mass}</p>`)
+          .style('left', (d3.event.pageX) + 'px')
+          .style('top', (d3.event.pageY - 28) + 'px');
+        })
+        .on('mouseout', () => {
+          tooltip.transition()
+          .duration(200)
+          .style('opacity', 0);
+        });
       };
 
       const drawWorld = (worldData) => {
